@@ -1,0 +1,19 @@
+version: 2
+jobs:
+  build:
+    macos:
+      xcode: "10.1.0"
+
+    steps:
+      - checkout
+      - run:
+          name: Install Ant
+          command: brew install ant
+      - run:
+          name: Build with Ant
+          command: ant
+      - run:
+          name: Build with Buck
+          command: ./bin/buck build --show-output buck
+      - store_artifacts:
+          path: buck-out/gen/programs/buck.pex
