@@ -5,7 +5,15 @@ jobs:
       xcode: "10.1.0"
 
     steps:
+      - restore_cache:
+          keys:
+            - source-{{ .Branch }}-{{ .Revision }}
+            - source-{{ .Branch }}-
+            - source-
       - checkout
+      - restore_cache:
+          keys:
+            - homebrew
       - run:
           name: Install Ant
           command: brew install ant
@@ -17,3 +25,11 @@ jobs:
           command: ./bin/buck build --show-output buck
       - store_artifacts:
           path: buck-out/gen/programs/buck.pex
+      - save_cache:
+          key: source-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ".git"
+      - save_cache:
+          key: homebrew
+          paths:
+            - "/usr/local/Homebrew"
