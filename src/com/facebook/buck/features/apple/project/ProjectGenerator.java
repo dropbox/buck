@@ -3495,9 +3495,18 @@ public class ProjectGenerator {
       return ImmutableMap.of();
     }
 
+    // We prefer using module name over the header prefix or shortname, which
+    // the main Buck compiler also does.
     BuildTarget buildTarget = appleNode.getBuildTarget();
-    Path headerPrefix =
-        AppleDescriptions.getHeaderPathPrefix(appleNode.getConstructorArg(), buildTarget);
+    String moduleName = getModuleName(appleNode);
+    Path headerPrefix;
+    if (moduleName != null) {
+      headerPrefix = Paths.get(moduleName);
+    }
+    else {
+      headerPrefix =
+          AppleDescriptions.getHeaderPathPrefix(appleNode.getConstructorArg(), buildTarget);
+    }
     Path relativePath = headerPrefix.resolve(getSwiftObjCGeneratedHeaderName(appleNode));
 
     ImmutableSortedMap.Builder<Path, Path> builder = ImmutableSortedMap.naturalOrder();
