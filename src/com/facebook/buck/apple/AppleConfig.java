@@ -287,7 +287,7 @@ public class AppleConfig implements ConfigView<BuckConfig> {
   }
 
   public boolean shouldUseShortNamesForTargets() {
-    return delegate.getBooleanValue(APPLE_SECTION, "should_use_short_names_for_targets", false);
+    return delegate.getBooleanValue(APPLE_SECTION, "should_use_short_names_for_targets", true);
   }
 
   public boolean shouldUseSwiftDelegate() {
