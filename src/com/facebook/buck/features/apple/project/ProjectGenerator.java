@@ -3359,6 +3359,19 @@ public class ProjectGenerator {
       if (fileReference.getExplicitFileType().equals(Optional.of("wrapper.framework"))) {
         UnflavoredBuildTargetView buildTarget =
             targetNode.getBuildTarget().getUnflavoredBuildTarget();
+
+        // If we detect we're a statically linked framework, we should bail out of this
+        // routine as it is unnecessary.
+        Optional<TargetNode<PrebuiltAppleFrameworkDescriptionArg>> maybeFrameworkArg =
+            TargetNodes.castArg(targetNode, PrebuiltAppleFrameworkDescriptionArg.class);
+        if (maybeFrameworkArg.isPresent()) {
+          PrebuiltAppleFrameworkDescriptionArg frameworkArg
+              = maybeFrameworkArg.get().getConstructorArg();
+          if (frameworkArg.getPreferredLinkage() == Linkage.STATIC) {
+            continue;
+          }
+        }
+
         if (frameworkTargets.contains(buildTarget)) {
           continue;
         }
