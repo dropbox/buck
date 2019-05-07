@@ -3007,36 +3007,21 @@ public class ProjectGenerator {
       }
       projectFilesystem.writeContentsToPath(newHashCode, hashCodeFilePath);
 
-      if (shouldCreateHeaderMap) {
-        HeaderMap.Builder headerMapBuilder = new HeaderMap.Builder();
-        for (Map.Entry<Path, SourcePath> entry : contents.entrySet()) {
-          if (shouldCreateHeadersSymlinks) {
-            headerMapBuilder.add(
-                entry.getKey().toString(),
-                getHeaderMapRelativeSymlinkPathForEntry(entry, headerSymlinkTreeRoot));
-          } else {
-            headerMapBuilder.add(
-                entry.getKey().toString(),
-                projectFilesystem.resolve(resolveSourcePath(entry.getValue())));
-          }
-        }
-
-        for (Map.Entry<Path, Path> entry : nonSourcePaths.entrySet()) {
-          if (shouldCreateHeadersSymlinks) {
-            headerMapBuilder.add(
-                entry.getKey().toString(),
-                getHeaderMapRelativeSymlinkPathForEntry(entry, headerSymlinkTreeRoot));
-          } else {
-            headerMapBuilder.add(entry.getKey().toString(), entry.getValue());
-          }
-        }
-
-        projectFilesystem.writeBytesToPath(headerMapBuilder.build().getBytes(), headerMapLocation);
-      }
       if (moduleName.isPresent() && resolvedContents.size() > 0) {
         if (shouldGenerateUmbrellaHeaderIfMissing) {
           writeUmbrellaHeaderIfNeeded(
               moduleName.get(), resolvedContents.keySet(), headerSymlinkTreeRoot);
+
+          if (moduleName.isPresent()) {
+            String concreteModuleName = moduleName.get();
+            Path rootUmbrellaPath = Paths.get(concreteModuleName, concreteModuleName + ".h");
+            Path umbrellaPath = headerSymlinkTreeRoot.resolve(rootUmbrellaPath);
+            ImmutableMap<Path, Path> newNonSourcePaths = ImmutableMap.<Path, Path>builder()
+                .putAll(nonSourcePaths)
+                .put(rootUmbrellaPath, umbrellaPath)
+                .build();
+            nonSourcePaths = newNonSourcePaths;
+          }
         }
         boolean containsSwift = !nonSourcePaths.isEmpty();
         if (containsSwift) {
@@ -3081,6 +3066,33 @@ public class ProjectGenerator {
         projectFilesystem.writeContentsToPath(
             "", // empty modulemap to allow non-modular imports for testing
             headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("testing.modulemap"));
+      }
+
+      if (shouldCreateHeaderMap) {
+        HeaderMap.Builder headerMapBuilder = new HeaderMap.Builder();
+        for (Map.Entry<Path, SourcePath> entry : contents.entrySet()) {
+          if (shouldCreateHeadersSymlinks) {
+            headerMapBuilder.add(
+                entry.getKey().toString(),
+                getHeaderMapRelativeSymlinkPathForEntry(entry, headerSymlinkTreeRoot));
+          } else {
+            headerMapBuilder.add(
+                entry.getKey().toString(),
+                projectFilesystem.resolve(resolveSourcePath(entry.getValue())));
+          }
+        }
+
+        for (Map.Entry<Path, Path> entry : nonSourcePaths.entrySet()) {
+          if (shouldCreateHeadersSymlinks) {
+            headerMapBuilder.add(
+                entry.getKey().toString(),
+                getHeaderMapRelativeSymlinkPathForEntry(entry, headerSymlinkTreeRoot));
+          } else {
+            headerMapBuilder.add(entry.getKey().toString(), entry.getValue());
+          }
+        }
+
+        projectFilesystem.writeBytesToPath(headerMapBuilder.build().getBytes(), headerMapLocation);
       }
     }
     headerSymlinkTrees.add(headerSymlinkTreeRoot);
