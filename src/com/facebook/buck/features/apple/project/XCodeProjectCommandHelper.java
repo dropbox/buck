@@ -368,7 +368,7 @@ public class XCodeProjectCommandHelper {
                 appleConfig.shouldGenerateHeaderSymlinkTreesOnly())
             .setShouldGenerateMissingUmbrellaHeader(
                 appleConfig.shouldGenerateMissingUmbrellaHeaders())
-            .setShouldUseShortNamesForTargets(true)
+            .setShouldUseShortNamesForTargets(appleConfig.shouldUseShortNamesForTargets())
             .setShouldCreateDirectoryStructure(combinedProject)
             .setShouldGenerateProjectSchemes(createProjectSchemes)
             .build();
