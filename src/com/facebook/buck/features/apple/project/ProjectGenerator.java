@@ -3023,7 +3023,12 @@ public class ProjectGenerator {
             nonSourcePaths = newNonSourcePaths;
           }
         }
-        boolean containsSwift = !nonSourcePaths.isEmpty();
+
+        boolean containsSwift = nonSourcePaths
+            .values()
+            .stream()
+            .anyMatch(path -> path.toString().endsWith("-Swift.h"));
+
         if (containsSwift) {
           projectFilesystem.writeContentsToPath(
               new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER).render(),
