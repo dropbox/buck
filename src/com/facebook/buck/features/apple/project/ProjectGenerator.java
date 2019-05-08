@@ -3667,16 +3667,7 @@ public class ProjectGenerator {
 
         builder.add(getHeaderSearchPathFromSymlinkTreeRoot(headerSymlinkTreePath));
 
-        Boolean containsSwift = isLibraryWithSwiftSources(node);
-        Boolean containsObjC = node
-            .getInputs()
-            .stream()
-            .anyMatch(path ->
-                path.toString().endsWith(".m")
-                    || path.toString().endsWith(".mm")
-                    || path.toString().endsWith(".c"));
-
-        if (containsSwift && containsObjC) {
+        if (isModularAppleLibrary(node)) {
           builder.add(headerSymlinkTreePath);
         }
       }
