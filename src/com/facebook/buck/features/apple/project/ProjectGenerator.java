@@ -3661,8 +3661,16 @@ public class ProjectGenerator {
                     getHeaderSymlinkTreePath(nativeNode, headerVisibility)));
           });
     } else {
-      for (Path headerSymlinkTreePath : collectRecursiveHeaderSymlinkTrees(targetNode)) {
+      for (Pair<Path, TargetNode<?>> headerNodePair : collectRecursiveHeaderSymlinkTrees(targetNode)) {
+        Path headerSymlinkTreePath = headerNodePair.getFirst();
+        TargetNode<?> node = headerNodePair.getSecond();
+
         builder.add(getHeaderSearchPathFromSymlinkTreeRoot(headerSymlinkTreePath));
+
+        Boolean containsSwift = isLibraryWithSwiftSources(node);
+        if (containsSwift) {
+          builder.add(headerSymlinkTreePath);
+        }
       }
     }
 
@@ -3771,13 +3779,17 @@ public class ProjectGenerator {
     }
   }
 
-  private ImmutableSet<Path> collectRecursiveHeaderSymlinkTrees(
+  private ImmutableSet<Pair<Path, TargetNode<?>>> collectRecursiveHeaderSymlinkTrees(
       TargetNode<? extends CxxLibraryDescription.CommonArg> targetNode) {
-    ImmutableSet.Builder<Path> builder = ImmutableSet.builder();
+    ImmutableSet.Builder<Pair<Path, TargetNode<?>>> builder = ImmutableSet.builder();
     visitRecursiveHeaderSymlinkTrees(
         targetNode,
         (nativeNode, headerVisibility) -> {
-          builder.add(getHeaderSymlinkTreePath(nativeNode, headerVisibility));
+          Pair<Path, TargetNode<?>> pair = new Pair<Path, TargetNode<?>>(
+              getHeaderSymlinkTreePath(nativeNode, headerVisibility),
+              nativeNode
+              );
+          builder.add(pair);
         });
     return builder.build();
   }
