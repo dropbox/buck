@@ -3049,11 +3049,10 @@ public class ProjectGenerator {
           if (moduleMapProvided) {
             projectFilesystem.writeContentsToPath(
                 new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER).render(),
-                moduleMapPath
-                );
-          projectFilesystem.writeContentsToPath(
-              new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.EXCLUDE_SWIFT_HEADER).render(),
-              headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("objc.modulemap"));
+                moduleMapPath);
+            projectFilesystem.writeContentsToPath(
+                new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.EXCLUDE_SWIFT_HEADER).render(),
+                headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("objc.modulemap"));
           }
 
           Path absoluteModuleRoot =
