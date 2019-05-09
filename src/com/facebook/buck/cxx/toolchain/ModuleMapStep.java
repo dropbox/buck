@@ -54,7 +54,16 @@ class ModuleMapStep implements Step {
   @Override
   public StepExecutionResult execute(ExecutionContext context) throws IOException {
     LOG.debug("Writing modulemap to %s", output);
-    filesystem.writeContentsToPath(moduleMap.render(), output);
+    /**
+     * NOTE:(bogo) If there is no file and it's not a symlink, write - otherwise you'll overwrite
+     * the local modulemap being provided.
+     */
+    if (!filesystem.exists(output) && !filesystem.isSymLink(output)) {
+      filesystem.deleteFileAtPathIfExists(output);
+      filesystem.createNewFile(output);
+      filesystem.writeContentsToPath(moduleMap.render(), output);
+    }
+
     return StepExecutionResults.SUCCESS;
   }
 

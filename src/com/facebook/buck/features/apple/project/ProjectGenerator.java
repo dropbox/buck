@@ -3043,22 +3043,29 @@ public class ProjectGenerator {
             .anyMatch(path -> path.toString().endsWith("-Swift.h"));
 
         if (containsSwift) {
-          projectFilesystem.writeContentsToPath(
-              new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER).render(),
-              headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("module.modulemap"));
+          Path moduleMapPath = headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("module.modulemap");
+          Boolean moduleMapProvided = !projectFilesystem.isSymLink(moduleMapPath);
+
+          if (moduleMapProvided) {
+            projectFilesystem.writeContentsToPath(
+                new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER).render(),
+                moduleMapPath
+                );
           projectFilesystem.writeContentsToPath(
               new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.EXCLUDE_SWIFT_HEADER).render(),
               headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("objc.modulemap"));
+          }
 
           Path absoluteModuleRoot =
               projectFilesystem
                   .getRootPath()
                   .resolve(headerSymlinkTreeRoot.resolve(moduleName.get()));
-          VFSOverlay vfsOverlay =
-              new VFSOverlay(
-                  ImmutableSortedMap.of(
-                      absoluteModuleRoot.resolve("module.modulemap"),
-                      absoluteModuleRoot.resolve("objc.modulemap")));
+
+          String objcMap = moduleMapProvided ? "module.modulemap" : "objc.modulemap";
+          VFSOverlay vfsOverlay = new VFSOverlay(
+                ImmutableSortedMap.of(
+                  absoluteModuleRoot.resolve("module.modulemap"),
+                  absoluteModuleRoot.resolve(objcMap)));
 
           projectFilesystem.writeContentsToPath(
               vfsOverlay.render(),
