@@ -500,6 +500,19 @@ public class ProjectGenerator {
 
       addGenruleFiles();
 
+      // HACK: in the event that a project only contains prebuilt frameworks that will
+      // lifted into the eventual target xcodeproj, do not generate these.
+      boolean onlyContainsPreBuiltFrameworks = true;
+      for (TargetNode<?> targetNode : projectTargets) {
+        Optional<TargetNode<PrebuiltAppleFrameworkDescriptionArg>> maybeFrameworkArg =
+            TargetNodes.castArg(targetNode, PrebuiltAppleFrameworkDescriptionArg.class);
+        onlyContainsPreBuiltFrameworks = maybeFrameworkArg.isPresent();
+      }
+
+      if (onlyContainsPreBuiltFrameworks) {
+        return;
+      }
+
       if (!hasAtLeastOneTarget && focusModules.hasFocus()) {
         return;
       }
