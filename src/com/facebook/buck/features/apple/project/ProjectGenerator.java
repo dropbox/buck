@@ -1677,7 +1677,7 @@ public class ProjectGenerator {
                 resolveSourcePath(arg.getBridgingHeader().get()));
         extraSettingsBuilder.put(
             "SWIFT_OBJC_BRIDGING_HEADER",
-            Joiner.on('/').join("$(SRCROOT)", bridgingHeaderPath.toString()));
+            bridgingHeaderPath.toString());
       }
 
       swiftVersion.ifPresent(s -> extraSettingsBuilder.put("SWIFT_VERSION", s));
