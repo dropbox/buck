@@ -509,7 +509,7 @@ public class ProjectGenerator {
         onlyContainsPreBuiltFrameworks = maybeFrameworkArg.isPresent();
       }
 
-      if (onlyContainsPreBuiltFrameworks) {
+      if (onlyContainsPreBuiltFrameworks || !isMainProject) {
         return;
       }
 
@@ -3548,6 +3548,11 @@ public class ProjectGenerator {
     ImmutableSortedMap.Builder<Path, Path> builder = ImmutableSortedMap.naturalOrder();
     builder.put(
         relativePath,
+        getSwiftObjCGeneratedHeaderPath(appleNode, projectFilesystem).toAbsolutePath());
+
+    // also add a non-prefixed version of the Swift header for usage in tests
+    builder.put(
+        relativePath.getFileName(),
         getSwiftObjCGeneratedHeaderPath(appleNode, projectFilesystem).toAbsolutePath());
 
     return builder.build();
