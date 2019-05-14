@@ -507,9 +507,12 @@ public class ProjectGenerator {
         Optional<TargetNode<PrebuiltAppleFrameworkDescriptionArg>> maybeFrameworkArg =
             TargetNodes.castArg(targetNode, PrebuiltAppleFrameworkDescriptionArg.class);
         onlyContainsPreBuiltFrameworks = maybeFrameworkArg.isPresent();
+        if (onlyContainsPreBuiltFrameworks == false) {
+          break;
+        }
       }
 
-      if (onlyContainsPreBuiltFrameworks || !isMainProject) {
+      if (onlyContainsPreBuiltFrameworks) {
         return;
       }
 
