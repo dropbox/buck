@@ -32,6 +32,8 @@ import com.facebook.buck.core.build.buildable.context.BuildableContext;
 import com.facebook.buck.core.build.context.BuildContext;
 import com.facebook.buck.core.exceptions.HumanReadableException;
 import com.facebook.buck.core.model.BuildTarget;
+import com.facebook.buck.core.model.Flavor;
+import com.facebook.buck.core.model.TargetConfiguration;
 import com.facebook.buck.core.model.impl.BuildTargetPaths;
 import com.facebook.buck.core.rulekey.AddToRuleKey;
 import com.facebook.buck.core.rules.ActionGraphBuilder;
@@ -48,15 +50,21 @@ import com.facebook.buck.core.sourcepath.resolver.SourcePathResolver;
 import com.facebook.buck.core.toolchain.tool.Tool;
 import com.facebook.buck.core.toolchain.tool.impl.CommandTool;
 import com.facebook.buck.core.util.log.Logger;
+import com.facebook.buck.cxx.CxxDescriptionEnhancer;
+import com.facebook.buck.cxx.CxxPreprocessorDep;
 import com.facebook.buck.cxx.CxxPreprocessorInput;
 import com.facebook.buck.cxx.HasAppleDebugSymbolDeps;
 import com.facebook.buck.cxx.NativeTestable;
 import com.facebook.buck.cxx.toolchain.CxxPlatform;
+import com.facebook.buck.cxx.toolchain.linker.Linker.LinkableDepType;
+import com.facebook.buck.cxx.toolchain.nativelink.NativeLinkable;
+import com.facebook.buck.cxx.toolchain.nativelink.NativeLinkableInput;
 import com.facebook.buck.file.WriteFile;
 import com.facebook.buck.io.BuildCellRelativePath;
 import com.facebook.buck.io.file.MorePaths;
 import com.facebook.buck.io.filesystem.ProjectFilesystem;
 import com.facebook.buck.rules.args.SourcePathArg;
+import com.facebook.buck.rules.coercer.FrameworkPath;
 import com.facebook.buck.step.Step;
 import com.facebook.buck.step.fs.CopyStep;
 import com.facebook.buck.step.fs.FindAndReplaceStep;
@@ -69,6 +77,7 @@ import com.facebook.buck.util.types.Either;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -80,6 +89,7 @@ import com.google.common.util.concurrent.Futures;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -95,7 +105,8 @@ import java.util.stream.Stream;
  * Creates a bundle: a directory containing files and subdirectories, described by an Info.plist.
  */
 public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
-    implements NativeTestable, BuildRuleWithBinary, HasRuntimeDeps, BinaryBuildRule {
+    implements NativeTestable, BuildRuleWithBinary, HasRuntimeDeps, BinaryBuildRule,
+    CxxPreprocessorDep, NativeLinkable {
 
   private static final Logger LOG = Logger.get(AppleBundle.class);
   public static final String CODE_SIGN_ENTITLEMENTS = "CODE_SIGN_ENTITLEMENTS";
@@ -106,60 +117,87 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
   private static final String CODE_SIGN_DRY_RUN_ENTITLEMENTS_FILE =
       "BUCK_code_sign_entitlements.plist";
 
-  @AddToRuleKey private final String extension;
+  @AddToRuleKey
+  private final String extension;
 
-  @AddToRuleKey private final Optional<String> productName;
+  @AddToRuleKey
+  private final Optional<String> productName;
 
-  @AddToRuleKey private final SourcePath infoPlist;
+  @AddToRuleKey
+  private final SourcePath infoPlist;
 
-  @AddToRuleKey private final ImmutableMap<String, String> infoPlistSubstitutions;
+  @AddToRuleKey
+  private final ImmutableMap<String, String> infoPlistSubstitutions;
 
-  @AddToRuleKey private final Optional<SourcePath> entitlementsFile;
+  @AddToRuleKey
+  private final Optional<SourcePath> entitlementsFile;
 
-  @AddToRuleKey private final Optional<BuildRule> binary;
+  @AddToRuleKey
+  private final Optional<BuildRule> binary;
 
-  @AddToRuleKey private final Optional<AppleDsym> appleDsym;
+  @AddToRuleKey
+  private final Optional<AppleDsym> appleDsym;
 
-  @AddToRuleKey private final ImmutableSet<BuildRule> extraBinaries;
+  @AddToRuleKey
+  private final ImmutableSet<BuildRule> extraBinaries;
 
-  @AddToRuleKey private final AppleBundleDestinations destinations;
+  @AddToRuleKey
+  private final AppleBundleDestinations destinations;
 
-  @AddToRuleKey private final AppleBundleResources resources;
+  @AddToRuleKey
+  private final AppleBundleResources resources;
 
-  @AddToRuleKey private final Set<SourcePath> frameworks;
+  @AddToRuleKey
+  private final Set<SourcePath> frameworks;
 
-  @AddToRuleKey private final Tool ibtool;
+  @AddToRuleKey
+  private final Tool ibtool;
 
-  @AddToRuleKey private final ImmutableSortedSet<BuildTarget> tests;
+  @AddToRuleKey
+  private final ImmutableSortedSet<BuildTarget> tests;
 
-  @AddToRuleKey private final ApplePlatform platform;
+  @AddToRuleKey
+  private final ApplePlatform platform;
 
-  @AddToRuleKey private final String sdkName;
+  @AddToRuleKey
+  private final String sdkName;
 
-  @AddToRuleKey private final String sdkVersion;
+  @AddToRuleKey
+  private final String sdkVersion;
 
-  @AddToRuleKey private final ProvisioningProfileStore provisioningProfileStore;
+  @AddToRuleKey
+  private final ProvisioningProfileStore provisioningProfileStore;
 
-  @AddToRuleKey private final Supplier<ImmutableList<CodeSignIdentity>> codeSignIdentitiesSupplier;
+  @AddToRuleKey
+  private final Supplier<ImmutableList<CodeSignIdentity>> codeSignIdentitiesSupplier;
 
-  @AddToRuleKey private final Optional<Tool> codesignAllocatePath;
+  @AddToRuleKey
+  private final Optional<Tool> codesignAllocatePath;
 
-  @AddToRuleKey private final Tool codesign;
+  @AddToRuleKey
+  private final Tool codesign;
 
-  @AddToRuleKey private final Optional<Tool> swiftStdlibTool;
+  @AddToRuleKey
+  private final Optional<Tool> swiftStdlibTool;
 
-  @AddToRuleKey private final Tool lipo;
+  @AddToRuleKey
+  private final Tool lipo;
 
-  @AddToRuleKey private final boolean dryRunCodeSigning;
+  @AddToRuleKey
+  private final boolean dryRunCodeSigning;
 
-  @AddToRuleKey private final ImmutableList<String> codesignFlags;
+  @AddToRuleKey
+  private final ImmutableList<String> codesignFlags;
 
-  @AddToRuleKey private final Optional<String> codesignIdentitySubjectName;
+  @AddToRuleKey
+  private final Optional<String> codesignIdentitySubjectName;
 
   // Need to use String here as RuleKeyBuilder requires that paths exist to compute hashes.
-  @AddToRuleKey private final ImmutableMap<SourcePath, String> extensionBundlePaths;
+  @AddToRuleKey
+  private final ImmutableMap<SourcePath, String> extensionBundlePaths;
 
-  @AddToRuleKey private final boolean copySwiftStdlibToFrameworks;
+  @AddToRuleKey
+  private final boolean copySwiftStdlibToFrameworks;
 
   private final Optional<AppleAssetCatalog> assetCatalog;
   private final Optional<CoreDataModel> coreDataModel;
@@ -340,10 +378,10 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
     return extension.equals(AppleBundleExtension.APP.toFileExtension())
         && binary.isPresent()
         && binary
-            .get()
-            .getBuildTarget()
-            .getFlavors()
-            .contains(AppleBinaryDescription.LEGACY_WATCH_FLAVOR);
+        .get()
+        .getBuildTarget()
+        .getFlavors()
+        .contains(AppleBinaryDescription.LEGACY_WATCH_FLAVOR);
   }
 
   @Override
@@ -774,7 +812,7 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
 
   /**
    * @param binariesMap A map from destination to source. Destination is deliberately used as a key
-   *     prevent multiple sources overwriting the same destination.
+   * prevent multiple sources overwriting the same destination.
    */
   private void copyBinariesIntoBundle(
       ImmutableList.Builder<Step> stepsBuilder,
@@ -843,10 +881,10 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
             .resolve(bundleRoot.getFileName() + "." + AppleBundleExtension.DSYM.toFileExtension());
     stepsBuilder.add(
         RmStep.of(
-                BuildCellRelativePath.fromCellRelativePath(
-                    buildContext.getBuildCellRootPath(),
-                    getProjectFilesystem(),
-                    dsymDestinationPath))
+            BuildCellRelativePath.fromCellRelativePath(
+                buildContext.getBuildCellRootPath(),
+                getProjectFilesystem(),
+                dsymDestinationPath))
             .withRecursive(true));
     stepsBuilder.add(new MoveStep(getProjectFilesystem(), dsymSourcePath, dsymDestinationPath));
 
@@ -986,7 +1024,7 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
     boolean shouldCopySwiftStdlib =
         !extension.equals(AppleBundleExtension.APPEX.toFileExtension())
             && (!extension.equals(AppleBundleExtension.FRAMEWORK.toFileExtension())
-                || copySwiftStdlibToFrameworks);
+            || copySwiftStdlibToFrameworks);
 
     if (swiftStdlibTool.isPresent() && shouldCopySwiftStdlib) {
       String tempDirPattern = isForPackaging ? "__swift_packaging_temp__%s" : "__swift_temp__%s";
@@ -1187,5 +1225,98 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
     return new CommandTool.Builder()
         .addArg(SourcePathArg.of(PathSourcePath.of(getProjectFilesystem(), bundleBinaryPath)))
         .build();
+  }
+
+  @Override
+  public Iterable<CxxPreprocessorDep> getCxxPreprocessorDeps(
+      CxxPlatform cxxPlatform, BuildRuleResolver ruleResolver) {
+    // We always no-op here, as apple bundle never exports anything.
+    return FluentIterable.of();
+  }
+
+  @Override
+  public CxxPreprocessorInput getCxxPreprocessorInput(
+      CxxPlatform cxxPlatform, ActionGraphBuilder graphBuilder) {
+    if (!extension.equals(FRAMEWORK_EXTENSION)) {
+      return CxxPreprocessorInput.of();
+    }
+
+    BuildRule dep = getTargetGraphOnlyDeps().first();
+    if (dep != null && dep instanceof CxxPreprocessorDep) {
+      return ((CxxPreprocessorDep) dep).getCxxPreprocessorInput(cxxPlatform, graphBuilder);
+    }
+    return CxxPreprocessorInput.of();
+  }
+
+  @Override
+  public ImmutableMap<BuildTarget, CxxPreprocessorInput> getTransitiveCxxPreprocessorInput(
+      CxxPlatform cxxPlatform, ActionGraphBuilder graphBuilder) {
+
+    // Here is where it gets interesting. In the event that this is a framework, we want
+    // to export out the underlying binary dep.
+    if (!extension.equals(FRAMEWORK_EXTENSION)) {
+      return ImmutableMap.of();
+    }
+
+    BuildRule dep = getTargetGraphOnlyDeps().first();
+    if (dep != null && dep instanceof CxxPreprocessorDep) {
+      return ((CxxPreprocessorDep) dep).getTransitiveCxxPreprocessorInput(cxxPlatform, graphBuilder);
+    }
+
+    return ImmutableMap.of();
+  }
+
+  @Override
+  public Iterable<? extends NativeLinkable> getNativeLinkableDeps(BuildRuleResolver ruleResolver) {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public NativeLinkableInput getNativeLinkableInput(CxxPlatform cxxPlatform, LinkableDepType type,
+      boolean forceLinkWhole, ActionGraphBuilder graphBuilder,
+      TargetConfiguration targetConfiguration) {
+
+    if (!extension.equals(FRAMEWORK_EXTENSION)) {
+      return NativeLinkableInput.of();
+    }
+
+    // In the framework case, we want to export just the framework path.
+    ImmutableSet.Builder<FrameworkPath> frameworkPaths = ImmutableSet.builder();
+    frameworkPaths.add(FrameworkPath.ofSourcePath(getSourcePathToOutput()));
+    return NativeLinkableInput.of(ImmutableList.of(), frameworkPaths.build(), Collections.emptySet());
+  }
+
+  @Override
+  public Iterable<? extends NativeLinkable> getNativeLinkableExportedDeps(
+      BuildRuleResolver ruleResolver) {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public Linkage getPreferredLinkage(CxxPlatform cxxPlatform) {
+    BuildRule targetDep = getTargetGraphOnlyDeps().first();
+
+    // Basically no-op out of this; nothing will link with this anyway.
+    // fixme: it is becoming increasingly clear that having an additional type
+    // for outputting frameworks would be desirable.
+    if (targetDep == null || !extension.equals(FRAMEWORK_EXTENSION)) {
+      return Linkage.ANY;
+    }
+
+    ImmutableSortedSet<Flavor> flavors = targetDep.getBuildTarget().getFlavors();
+    if (flavors.contains(CxxDescriptionEnhancer.SHARED_FLAVOR)) {
+      return Linkage.SHARED;
+    } else if (flavors.contains(CxxDescriptionEnhancer.STATIC_FLAVOR) ||
+        flavors.contains(CxxDescriptionEnhancer.STATIC_PIC_FLAVOR)) {
+      return Linkage.SHARED;
+    }
+
+    return Linkage.ANY;
+  }
+
+  @Override
+  public ImmutableMap<String, SourcePath> getSharedLibraries(CxxPlatform cxxPlatform,
+      ActionGraphBuilder graphBuilder) {
+    return ImmutableMap.of();
   }
 }

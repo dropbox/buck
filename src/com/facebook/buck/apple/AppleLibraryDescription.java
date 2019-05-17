@@ -1062,15 +1062,36 @@ public class AppleLibraryDescription
 
     Objects.requireNonNull(metadataType);
 
+    // HACK: at this juncture, we're about to append a cxx build flavor to something that
+    // may already have one. We'll strip it here. I have no idea if this is correct.
+    //
+    // This is caused by having a dependency that contains Swift and gets wrapped up into
+    // a apple_bundle. (e.g. binary = ":mylib#shared")
+    BuildTarget strippedTarget = baseTarget.withoutFlavors(
+        CxxDescriptionEnhancer.SHARED_FLAVOR,
+        CxxDescriptionEnhancer.STATIC_FLAVOR
+    );
+
     return graphBuilder.requireMetadata(
-        baseTarget.withAppendedFlavors(metadataType.getFlavor(), platform.getFlavor()),
+        strippedTarget.withAppendedFlavors(metadataType.getFlavor(), platform.getFlavor()),
         CxxPreprocessorInput.class);
   }
 
   public static Optional<CxxPreprocessorInput> underlyingModuleCxxPreprocessorInput(
       BuildTarget target, ActionGraphBuilder graphBuilder, CxxPlatform platform) {
+
+    // HACK: at this juncture, we're about to append a cxx build flavor to something that
+    // may already have one. We'll strip it here. I have no idea if this is correct.
+    //
+    // This is caused by having a dependency that contains Swift and gets wrapped up into
+    // a apple_bundle. (e.g. binary = ":mylib#shared")
+    BuildTarget strippedTarget = target.withoutFlavors(
+        CxxDescriptionEnhancer.SHARED_FLAVOR,
+        CxxDescriptionEnhancer.STATIC_FLAVOR
+    );
+
     return graphBuilder.requireMetadata(
-        target.withFlavors(
+        strippedTarget.withFlavors(
             platform.getFlavor(),
             AppleLibraryDescription.MetadataType.APPLE_SWIFT_UNDERLYING_MODULE_INPUT.getFlavor()),
         CxxPreprocessorInput.class);

@@ -165,7 +165,7 @@ public class PrebuiltAppleFramework extends AbstractBuildRuleWithDeclaredAndExtr
   public Iterable<CxxPreprocessorDep> getCxxPreprocessorDeps(
       CxxPlatform cxxPlatform, BuildRuleResolver ruleResolver) {
     if (!isPlatformSupported(cxxPlatform)) {
-      return ImmutableList.of();
+        return ImmutableList.of();
     }
     return FluentIterable.from(getBuildDeps()).filter(CxxPreprocessorDep.class);
   }
