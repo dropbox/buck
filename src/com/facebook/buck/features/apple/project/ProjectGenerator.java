@@ -1126,7 +1126,7 @@ public class ProjectGenerator {
       SourcePath source, SourcePathResolver pathResolver, Path outputDirectory) {
     Path pathRelativeToCell = pathResolver.getRelativePath(source);
     Path pathRelativeToOutput = outputDirectory.relativize(pathRelativeToCell);
-    return pathRelativeToOutput.toString();
+    return pathRelativeToOutput.getFileName().toString();
   }
 
   private static void appendPlatformSourceToAllPlatformSourcesAndSourcesByPlatform(
