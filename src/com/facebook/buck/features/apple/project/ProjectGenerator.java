@@ -1598,6 +1598,13 @@ public class ProjectGenerator {
           BuildTarget testTarget = bundleLoaderNode.get().getBuildTarget();
           extraSettingsBuilder.put("TEST_TARGET_NAME", getXcodeTargetName(testTarget));
           addPBXTargetDependency(target, testTarget);
+          // FIXME:(bogo) A terribad hack to get Dropoline to appear as a build dep
+          for (BuildTarget depTarget : buildTargetNode.getDeclaredDeps()) {
+            if (depTarget.getShortName().endsWith("App")) {
+              addPBXTargetDependency(target, depTarget);
+            }
+          }
+
         } else {
           throw new HumanReadableException(
               "The test rule '%s' is configured with 'is_ui_test' but has no test_host_app",
