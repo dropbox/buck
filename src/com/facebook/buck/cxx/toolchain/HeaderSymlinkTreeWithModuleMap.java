@@ -28,7 +28,6 @@ import com.facebook.buck.core.sourcepath.ExplicitBuildTargetSourcePath;
 import com.facebook.buck.core.sourcepath.SourcePath;
 import com.facebook.buck.io.filesystem.ProjectFilesystem;
 import com.facebook.buck.step.Step;
-import com.facebook.buck.step.fs.CopyStep;
 import com.facebook.buck.step.fs.WriteFileStep;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -107,10 +106,10 @@ public final class HeaderSymlinkTreeWithModuleMap extends HeaderSymlinkTree {
             );
 
             builder.add(
-                CopyStep.forFile(
+                new ModuleMapStep(
                     getProjectFilesystem(),
-                    sourceModuleMapPath,
-                    destinationModuleMapPath
+                    destinationModuleMapPath,
+                    sourceModuleMapPath
                 ));
           } else {
             builder.add(

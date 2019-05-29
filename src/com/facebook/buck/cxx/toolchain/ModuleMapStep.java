@@ -33,12 +33,26 @@ class ModuleMapStep implements Step {
 
   private final ProjectFilesystem filesystem;
   private final Path output;
-  private final ModuleMap moduleMap;
+
+  private ModuleMap moduleMap;
+  private Path moduleMapPath;
 
   public ModuleMapStep(ProjectFilesystem filesystem, Path output, ModuleMap moduleMap) {
+    this(filesystem, output);
+    this.moduleMap = moduleMap;
+  }
+
+  public ModuleMapStep(ProjectFilesystem filesystem, Path output, Path moduleMap) {
+    this(filesystem, output);
+    this.moduleMapPath = moduleMap;
+  }
+
+  private ModuleMapStep(ProjectFilesystem filesystem, Path output) {
     this.filesystem = filesystem;
     this.output = output;
-    this.moduleMap = moduleMap;
+
+    this.moduleMap = null;
+    this.moduleMapPath = null;
   }
 
   @Override
@@ -54,14 +68,11 @@ class ModuleMapStep implements Step {
   @Override
   public StepExecutionResult execute(ExecutionContext context) throws IOException {
     LOG.debug("Writing modulemap to %s", output);
-    /**
-     * NOTE:(bogo) If there is no file and it's not a symlink, write - otherwise you'll overwrite
-     * the local modulemap being provided.
-     */
-    if (!filesystem.exists(output) && !filesystem.isSymLink(output)) {
-      filesystem.deleteFileAtPathIfExists(output);
-      filesystem.createNewFile(output);
+
+    if (moduleMap != null) {
       filesystem.writeContentsToPath(moduleMap.render(), output);
+    } else {
+      filesystem.createSymLink(output, moduleMapPath.toAbsolutePath(), false);
     }
 
     return StepExecutionResults.SUCCESS;
