@@ -1144,8 +1144,21 @@ public class WorkspaceAndProjectGenerator {
       ImmutableSet<BuildTarget> buildTargets =
           pbxTargetToBuildTarget.get(project.getTargets().get(0));
       BuildTarget buildTarget = buildTargets.iterator().next();
-      Path projectOutputDirectory =
-          buildTarget.getBasePath().resolve(project.getName() + ".xcodeproj");
+
+      Path projectOutputDirectory;
+      if (combinedProject) {
+        String workspaceName =
+            XcodeWorkspaceConfigDescription.getWorkspaceNameFromArg(workspaceArguments);
+        workspaceName += "-Combined";
+        projectOutputDirectory =
+            BuildTargetPaths.getGenPath(rootCell.getFilesystem(), workspaceBuildTarget, "%s")
+                .getParent()
+                .resolve(workspaceName + ".xcodeproj");
+      } else {
+        projectOutputDirectory = buildTarget
+            .getBasePath()
+            .resolve(project.getName() + ".xcodeproj");
+      }
 
       SchemeGenerator schemeGenerator =
           buildSchemeGenerator(
