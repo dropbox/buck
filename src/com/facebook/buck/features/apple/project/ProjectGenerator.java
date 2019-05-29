@@ -3053,16 +3053,24 @@ public class ProjectGenerator {
             .anyMatch(path -> path.toString().endsWith("-Swift.h"));
 
         if (containsSwift) {
-          Path moduleMapPath = headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("module.modulemap");
-          Boolean moduleMapProvided = !projectFilesystem.isSymLink(moduleMapPath);
+          Optional<Path> externalModuleMap = contents
+              .keySet()
+              .stream()
+              .filter(path -> path.toString().endsWith(".modulemap"))
+              .findFirst();
 
-          if (moduleMapProvided) {
+          if (!externalModuleMap.isPresent()) {
             projectFilesystem.writeContentsToPath(
                 new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER).render(),
-                moduleMapPath);
+                headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("module.modulemap"));
             projectFilesystem.writeContentsToPath(
                 new ModuleMap(moduleName.get(), ModuleMap.SwiftMode.EXCLUDE_SWIFT_HEADER).render(),
                 headerSymlinkTreeRoot.resolve(moduleName.get()).resolve("objc.modulemap"));
+          } else {
+            projectFilesystem.createSymLink(
+                headerSymlinkTreeRoot.resolve("module.modulemap"),
+                externalModuleMap.get(),
+                false);
           }
 
           Path absoluteModuleRoot =
@@ -3070,7 +3078,7 @@ public class ProjectGenerator {
                   .getRootPath()
                   .resolve(headerSymlinkTreeRoot.resolve(moduleName.get()));
 
-          String objcMap = moduleMapProvided ? "module.modulemap" : "objc.modulemap";
+          String objcMap = externalModuleMap.isPresent() ? "module.modulemap" : "objc.modulemap";
           VFSOverlay vfsOverlay = new VFSOverlay(
                 ImmutableSortedMap.of(
                   absoluteModuleRoot.resolve("module.modulemap"),

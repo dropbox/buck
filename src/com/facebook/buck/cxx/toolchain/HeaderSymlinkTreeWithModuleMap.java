@@ -28,6 +28,7 @@ import com.facebook.buck.core.sourcepath.ExplicitBuildTargetSourcePath;
 import com.facebook.buck.core.sourcepath.SourcePath;
 import com.facebook.buck.io.filesystem.ProjectFilesystem;
 import com.facebook.buck.step.Step;
+import com.facebook.buck.step.fs.CopyStep;
 import com.facebook.buck.step.fs.WriteFileStep;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -67,7 +68,7 @@ public final class HeaderSymlinkTreeWithModuleMap extends HeaderSymlinkTree {
     if (moduleName.isPresent()) {
       return ExplicitBuildTargetSourcePath.of(
           getBuildTarget(),
-          moduleMapPath(getProjectFilesystem(), getBuildTarget(), moduleName.get()));
+          moduleMapPath(getProjectFilesystem(), getBuildTarget(), moduleName.get(), "module.modulemap"));
     } else {
       return super.getSourcePathToOutput();
     }
@@ -81,15 +82,47 @@ public final class HeaderSymlinkTreeWithModuleMap extends HeaderSymlinkTree {
         ImmutableList.<Step>builder().addAll(super.getBuildSteps(context, buildableContext));
     moduleName.ifPresent(
         moduleName -> {
-          builder.add(
-              new ModuleMapStep(
-                  getProjectFilesystem(),
-                  moduleMapPath(getProjectFilesystem(), getBuildTarget(), moduleName),
-                  new ModuleMap(
-                      moduleName,
-                      containsSwiftHeader(paths, moduleName)
-                          ? ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER
-                          : ModuleMap.SwiftMode.NO_SWIFT)));
+          Optional<Path> providedModuleMapPath = paths
+              .stream()
+              .filter(path -> path.toString().endsWith(".modulemap"))
+              .findFirst();
+
+          Path destinationModuleMapPath = moduleMapPath(
+              getProjectFilesystem(),
+              getBuildTarget(),
+              moduleName,
+              "module.modulemap");
+
+          if (providedModuleMapPath.isPresent()) {
+            String sourceModuleMapName = providedModuleMapPath
+                .get()
+                .getFileName()
+                .toString();
+
+            Path sourceModuleMapPath = moduleMapPath(
+                getProjectFilesystem(),
+                getBuildTarget(),
+                moduleName,
+                sourceModuleMapName
+            );
+
+            builder.add(
+                CopyStep.forFile(
+                    getProjectFilesystem(),
+                    sourceModuleMapPath,
+                    destinationModuleMapPath
+                ));
+          } else {
+            builder.add(
+                new ModuleMapStep(
+                    getProjectFilesystem(),
+                    destinationModuleMapPath,
+                    new ModuleMap(
+                        moduleName,
+                        containsSwiftHeader(paths, moduleName)
+                            ? ModuleMap.SwiftMode.INCLUDE_SWIFT_HEADER
+                            : ModuleMap.SwiftMode.NO_SWIFT)));
+          }
 
           Path umbrellaHeaderPath = Paths.get(moduleName, moduleName + ".h");
           if (!paths.contains(umbrellaHeaderPath)) {
@@ -118,9 +151,9 @@ public final class HeaderSymlinkTreeWithModuleMap extends HeaderSymlinkTree {
     }
   }
 
-  static Path moduleMapPath(ProjectFilesystem filesystem, BuildTarget target, String moduleName) {
+  static Path moduleMapPath(ProjectFilesystem filesystem, BuildTarget target, String moduleName, String mapName) {
     return BuildTargetPaths.getGenPath(
-        filesystem, target, "%s/" + moduleName + "/module.modulemap");
+        filesystem, target, "%s/" + moduleName + "/" + mapName);
   }
 
   private static boolean containsSwiftHeader(ImmutableSortedSet<Path> paths, String moduleName) {
