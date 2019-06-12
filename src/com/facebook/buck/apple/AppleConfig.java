@@ -290,6 +290,10 @@ public class AppleConfig implements ConfigView<BuckConfig> {
     return delegate.getBooleanValue(APPLE_SECTION, "should_use_short_names_for_targets", true);
   }
 
+  public boolean shouldSkipAppexCopyFrameworksInXcodeProject() {
+    return delegate.getBooleanValue(APPLE_SECTION, "skip_appex_copy_frameworks_in_xcode", false);
+  }
+
   public boolean shouldUseSwiftDelegate() {
     // TODO(mgd): Remove Swift delegation from Apple rules
     return delegate.getBooleanValue(APPLE_SECTION, "use_swift_delegate", true);

@@ -821,7 +821,7 @@ public class ProjectGenerator {
                 : AppleBuildRules.RecursiveDependenciesMode.COPYING,
             targetNode,
             Optional.of(xcodeDescriptions.getXCodeDescriptions()));
-    if (bundleRequiresRemovalOfAllTransitiveFrameworks(targetNode)) {
+    if (bundleRequiresRemovalOfAllTransitiveFrameworks(targetNode, appleConfig)) {
       copiedRules = rulesWithoutFrameworkBundles(copiedRules);
     } else if (bundleRequiresAllTransitiveFrameworks(binaryNode, bundleLoaderNode)) {
       copiedRules =
@@ -4670,6 +4670,11 @@ public class ProjectGenerator {
         && arg.getExtension().getLeft().equals(AppleBundleExtension.FRAMEWORK);
   }
 
+  private static boolean isAppExtension(HasAppleBundleFields arg) {
+    return arg.getExtension().isLeft()
+        && arg.getExtension().getLeft().equals(AppleBundleExtension.APPEX);
+  }
+
   private static boolean isModularAppleLibrary(TargetNode<?> libraryNode) {
     Optional<TargetNode<AppleLibraryDescriptionArg>> appleLibNode =
         TargetNodes.castArg(libraryNode, AppleLibraryDescriptionArg.class);
@@ -4682,8 +4687,10 @@ public class ProjectGenerator {
   }
 
   private static boolean bundleRequiresRemovalOfAllTransitiveFrameworks(
-      TargetNode<? extends HasAppleBundleFields> targetNode) {
-    return isFrameworkBundle(targetNode.getConstructorArg());
+      TargetNode<? extends HasAppleBundleFields> targetNode, AppleConfig config) {
+    return isFrameworkBundle(targetNode.getConstructorArg()) ||
+        (config.shouldSkipAppexCopyFrameworksInXcodeProject() &&
+            isAppExtension(targetNode.getConstructorArg()));
   }
 
   private static boolean bundleRequiresAllTransitiveFrameworks(
