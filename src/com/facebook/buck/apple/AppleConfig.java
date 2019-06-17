@@ -290,6 +290,10 @@ public class AppleConfig implements ConfigView<BuckConfig> {
     return delegate.getBooleanValue(APPLE_SECTION, "should_use_short_names_for_targets", true);
   }
 
+  public boolean shouldAddRootUserHeaderSearchPathInXcode() {
+    return delegate.getBooleanValue(APPLE_SECTION, "add_root_user_header_search_path_in_xcode", false);
+  }
+
   public boolean shouldSkipAppexCopyFrameworksInXcodeProject() {
     return delegate.getBooleanValue(APPLE_SECTION, "skip_appex_copy_frameworks_in_xcode", false);
   }

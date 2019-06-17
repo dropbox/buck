@@ -530,7 +530,13 @@ public class ProjectGenerator {
                 .getBuildConfigurationList()
                 .getBuildConfigurationsByName()
                 .getUnchecked(configName);
-        outputConfig.setBuildSettings(new NSDictionary());
+        NSDictionary settings = new NSDictionary();
+        if (isMainProject && appleConfig.shouldAddRootUserHeaderSearchPathInXcode()) {
+          settings.put("ALWAYS_SEARCH_USER_PATHS", "NO");
+          settings.put("USER_HEADER_SEARCH_PATHS",
+              projectFilesystem.getRootPath().toAbsolutePath().toString());
+        }
+        outputConfig.setBuildSettings(settings);
       }
 
       if (!options.shouldGenerateHeaderSymlinkTreesOnly()) {
