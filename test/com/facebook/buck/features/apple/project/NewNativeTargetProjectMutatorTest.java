@@ -99,7 +99,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator
         .setTargetName("TestTarget")
         .setProduct(ProductTypes.BUNDLE, "TestTargetProduct", Paths.get("TestTargetProduct.bundle"))
-        .buildTargetAndAddToProject(generatedProject, true);
+        .buildTargetAndAddToProject(generatedProject, true, null);
 
     assertTargetExistsAndReturnTarget(generatedProject, "TestTarget");
     assertHasTargetGroupWithName(generatedProject, "TestTarget");
@@ -113,7 +113,7 @@ public class NewNativeTargetProjectMutatorTest {
         .setTargetName("TestTarget")
         .setTargetGroupPath(ImmutableList.of("Grandparent", "Parent"))
         .setProduct(ProductTypes.BUNDLE, "TestTargetProduct", Paths.get("TestTargetProduct.bundle"))
-        .buildTargetAndAddToProject(generatedProject, true);
+        .buildTargetAndAddToProject(generatedProject, true, null);
 
     assertTargetExistsAndReturnTarget(generatedProject, "TestTarget");
     PBXGroup grandparentGroup =
@@ -131,7 +131,7 @@ public class NewNativeTargetProjectMutatorTest {
             .setTargetGroupPath(ImmutableList.of("Grandparent", "Parent"))
             .setProduct(
                 ProductTypes.BUNDLE, "TestTargetProduct", Paths.get("TestTargetProduct.bundle"))
-            .buildTargetAndAddToProject(generatedProject, false);
+            .buildTargetAndAddToProject(generatedProject, false, null);
 
     assertFalse(result.targetGroup.isPresent());
   }
@@ -149,7 +149,7 @@ public class NewNativeTargetProjectMutatorTest {
             SourceWithFlags.of(bar, ImmutableList.of("-Wall")),
             SourceWithFlags.of(baz)));
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXGroup sourcesGroup = result.targetGroup.get().getOrCreateChildGroupByName("Sources");
 
@@ -178,7 +178,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setPublicHeaders(ImmutableSet.of(bar, baz));
     mutator.setPrivateHeaders(ImmutableSet.of(foo));
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXGroup sourcesGroup = result.targetGroup.get().getOrCreateChildGroupByName("Sources");
 
@@ -206,7 +206,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setPrefixHeader(Optional.of(prefixHeader));
 
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     // No matter where the prefixHeader file is it should always be directly inside Sources
     PBXGroup sourcesGroup = result.targetGroup.get().getOrCreateChildGroupByName("Sources");
@@ -234,7 +234,7 @@ public class NewNativeTargetProjectMutatorTest {
                 PBXReference.SourceTree.BUILT_PRODUCTS_DIR,
                 Optional.empty())));
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
     assertHasSingletonFrameworksPhaseWithFrameworkEntries(
         result.target, ImmutableList.of("$SDKROOT/Foo.framework", "$BUILT_PRODUCTS_DIR/libdep.a"));
   }
@@ -251,7 +251,7 @@ public class NewNativeTargetProjectMutatorTest {
 
     mutator.setRecursiveResources(ImmutableSet.of(arg));
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     assertHasSingletonPhaseWithEntries(
         result.target, PBXResourcesBuildPhase.class, ImmutableList.of("$SOURCE_ROOT/../foo.png"));
@@ -269,7 +269,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setCopyFilesPhases(ImmutableList.of(copyPhase));
 
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXBuildPhase buildPhaseToTest =
         getSingletonPhaseByType(result.target, PBXCopyFilesBuildPhase.class);
@@ -296,7 +296,7 @@ public class NewNativeTargetProjectMutatorTest {
         ImmutableList.of(postbuildNode), x -> buildRuleResolver);
 
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXNativeTarget target = result.target;
 
@@ -323,7 +323,7 @@ public class NewNativeTargetProjectMutatorTest {
     NewNativeTargetProjectMutator mutator = mutatorWithCommonDefaults();
     mutator.setRecursiveAssetCatalogs(ImmutableSet.of(arg));
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
     assertHasSingletonPhaseWithEntries(
         result.target,
         PBXResourcesBuildPhase.class,
@@ -347,7 +347,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setPostBuildRunScriptPhasesFromTargetNodes(
         ImmutableList.of(prebuildNode), x -> buildRuleResolver);
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXShellScriptBuildPhase phase =
         getSingletonPhaseByType(result.target, PBXShellScriptBuildPhase.class);
@@ -385,7 +385,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setPostBuildRunScriptPhasesFromTargetNodes(
         ImmutableList.of(jsBundleNode), x -> scenario.graphBuilder);
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXShellScriptBuildPhase phase =
         getSingletonPhaseByType(result.target, PBXShellScriptBuildPhase.class);
@@ -419,7 +419,7 @@ public class NewNativeTargetProjectMutatorTest {
     mutator.setPostBuildRunScriptPhasesFromTargetNodes(
         ImmutableList.of(jsBundleGenruleNode), x -> scenario.graphBuilder);
     NewNativeTargetProjectMutator.Result result =
-        mutator.buildTargetAndAddToProject(generatedProject, true);
+        mutator.buildTargetAndAddToProject(generatedProject, true, null);
 
     PBXShellScriptBuildPhase phase =
         getSingletonPhaseByType(result.target, PBXShellScriptBuildPhase.class);

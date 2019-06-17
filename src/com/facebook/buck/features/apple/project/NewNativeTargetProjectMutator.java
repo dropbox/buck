@@ -37,6 +37,7 @@ import com.facebook.buck.apple.xcode.xcodeproj.PBXHeadersBuildPhase;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXNativeTarget;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXProject;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXReference;
+import com.facebook.buck.apple.xcode.xcodeproj.PBXReference.SourceTree;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXResourcesBuildPhase;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXShellScriptBuildPhase;
 import com.facebook.buck.apple.xcode.xcodeproj.PBXSourcesBuildPhase;
@@ -288,7 +289,7 @@ class NewNativeTargetProjectMutator {
     return this;
   }
 
-  public Result buildTargetAndAddToProject(PBXProject project, boolean addBuildPhases) {
+  public Result buildTargetAndAddToProject(PBXProject project, boolean addBuildPhases, Path targetPath) {
     PBXNativeTarget target = new PBXNativeTarget(targetName);
 
     Optional<PBXGroup> optTargetGroup;
@@ -296,6 +297,10 @@ class NewNativeTargetProjectMutator {
       PBXGroup targetGroup =
           project.getMainGroup().getOrCreateDescendantGroupByPath(targetGroupPath);
       targetGroup = targetGroup.getOrCreateChildGroupByName(targetName);
+      if (targetPath != null) {
+        targetGroup.setSourceTree(SourceTree.SOURCE_ROOT);
+        targetGroup.setPath(targetPath.toString());
+      }
 
       // Phases
       addRunScriptBuildPhases(target, preBuildRunScriptPhases);

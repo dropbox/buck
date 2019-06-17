@@ -708,7 +708,9 @@ public class ProjectGenerator {
         .setPreBuildRunScriptPhases(ImmutableList.of(scriptPhase));
 
     NewNativeTargetProjectMutator.Result targetBuilderResult;
-    targetBuilderResult = mutator.buildTargetAndAddToProject(project, isFocusedOnTarget);
+    targetBuilderResult = mutator.buildTargetAndAddToProject(project,
+        isFocusedOnTarget,
+        pathRelativizer.outputPathToBuildTargetPath(targetNode.getBuildTarget()));
 
     BuildTarget compilerTarget =
         HalideLibraryDescription.createHalideCompilerBuildTarget(buildTarget);
@@ -1547,7 +1549,9 @@ public class ProjectGenerator {
     }
 
     NewNativeTargetProjectMutator.Result targetBuilderResult =
-        mutator.buildTargetAndAddToProject(project, isFocusedOnTarget);
+        mutator.buildTargetAndAddToProject(project,
+                                           isFocusedOnTarget,
+                                           pathRelativizer.outputPathToBuildTargetPath(targetNode.getBuildTarget()));
     PBXNativeTarget target = targetBuilderResult.target;
     Optional<PBXGroup> targetGroup = targetBuilderResult.targetGroup;
 
