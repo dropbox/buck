@@ -1293,6 +1293,9 @@ public class ProjectGenerator {
     BuildTarget buildTarget = buildTargetNode.getBuildTarget();
     boolean containsSwiftCode = projGenerationStateCache.targetContainsSwiftSourceCode(targetNode);
 
+    // Used far below to avoid adding entitlements to the project 2x.
+    boolean addedEntitlements = false;
+
     String buildTargetName = getProductNameForBuildTargetNode(buildTargetNode);
     CxxLibraryDescription.CommonArg arg = targetNode.getConstructorArg();
     NewNativeTargetProjectMutator mutator =
@@ -1973,6 +1976,19 @@ public class ProjectGenerator {
                   .collect(Collectors.joining(" ")));
         }
 
+        Optional<TargetNode<AppleBinaryDescriptionArg>> binaryTarget =
+            TargetNodes.castArg(targetNode, AppleBinaryDescriptionArg.class);
+        if (binaryTarget.isPresent()) {
+          Optional<SourcePath> entitlementsFile =
+              binaryTarget.get().getConstructorArg().getEntitlementsFile();
+          if (entitlementsFile.isPresent()) {
+            appendConfigsBuilder.put(
+                "CODE_SIGN_ENTITLEMENTS",
+                pathRelativizer.outputPathToSourcePath(entitlementsFile.get()).toString());
+            addedEntitlements = true;
+          }
+        }
+
         ImmutableMap<String, String> appendedConfig = appendConfigsBuilder.build();
 
         Optional<ImmutableSortedMap<String, ImmutableMap<String, String>>> configs =
@@ -2025,7 +2041,8 @@ public class ProjectGenerator {
       addSceneKitAssetsIntoTarget(appleTargetNode.get(), targetGroup.get());
     }
 
-    if (bundle.isPresent()
+    if (!addedEntitlements
+        && bundle.isPresent()
         && isFocusedOnTarget
         && !options.shouldGenerateHeaderSymlinkTreesOnly()) {
       addEntitlementsPlistIntoTarget(bundle.get(), targetGroup.get());
@@ -2715,7 +2732,6 @@ public class ProjectGenerator {
       TargetNode<? extends HasAppleBundleFields> targetNode, PBXGroup targetGroup) {
     ImmutableMap<String, String> infoPlistSubstitutions =
         targetNode.getConstructorArg().getInfoPlistSubstitutions();
-
     if (infoPlistSubstitutions.containsKey(AppleBundle.CODE_SIGN_ENTITLEMENTS)) {
       String entitlementsPlistPath =
           InfoPlistSubstitution.replaceVariablesInString(
