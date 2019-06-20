@@ -1982,7 +1982,7 @@ public class ProjectGenerator {
           Optional<SourcePath> entitlementsFile =
               binaryTarget.get().getConstructorArg().getEntitlementsFile();
           if (entitlementsFile.isPresent()) {
-            appendConfigsBuilder.put(
+            extraSettingsBuilder.put(
                 "CODE_SIGN_ENTITLEMENTS",
                 pathRelativizer.outputPathToSourcePath(entitlementsFile.get()).toString());
             addedEntitlements = true;
