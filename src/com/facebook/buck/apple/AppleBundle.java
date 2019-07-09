@@ -1280,9 +1280,12 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
       return NativeLinkableInput.of();
     }
 
+    BuildRule rule = graphBuilder.requireRule(getBuildTarget().withAppendedFlavors(cxxPlatform.getFlavor()));
+
     // In the framework case, we want to export just the framework path.
     ImmutableSet.Builder<FrameworkPath> frameworkPaths = ImmutableSet.builder();
-    frameworkPaths.add(FrameworkPath.ofSourcePath(getSourcePathToOutput()));
+    frameworkPaths.add(FrameworkPath.ofSourcePath(rule.getSourcePathToOutput()));
+
     return NativeLinkableInput.of(ImmutableList.of(), frameworkPaths.build(), Collections.emptySet());
   }
 
