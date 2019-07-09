@@ -488,7 +488,7 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
             infoPlistSubstitutionTempPath,
             assetCatalog.map(AppleAssetCatalog::getOutputPlist),
             infoPlistOutputPath,
-            getInfoPlistAdditionalKeys(),
+            getInfoPlistAdditionalKeys(infoPlistSubstitutions),
             getInfoPlistOverrideKeys(),
             PlistProcessStep.OutputFormat.BINARY));
 
@@ -960,7 +960,8 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
     return !extension.equals(AppleBundleExtension.XPC.toFileExtension());
   }
 
-  private ImmutableMap<String, NSObject> getInfoPlistAdditionalKeys() {
+  private ImmutableMap<String, NSObject> getInfoPlistAdditionalKeys(
+      ImmutableMap<String, String> infoPlistSubstitutions) {
     ImmutableMap.Builder<String, NSObject> keys = ImmutableMap.builder();
 
     switch (platform.getType()) {
@@ -996,7 +997,15 @@ public class AppleBundle extends AbstractBuildRuleWithDeclaredAndExtraDeps
     keys.put("DTPlatformName", new NSString(platform.getName()));
     keys.put("DTPlatformVersion", new NSString(sdkVersion));
     keys.put("DTSDKName", new NSString(sdkName + sdkVersion));
-    keys.put("MinimumOSVersion", new NSString(minOSVersion));
+
+    // HACK:(jforbes) prefer IPHONEOS_DEPLOYMENT_TARGET if we have it.
+    String plist_min_version_override = infoPlistSubstitutions.get("IPHONEOS_DEPLOYMENT_TARGET");
+    if (plist_min_version_override != null) {
+      keys.put("MinimumOSVersion", new NSString(plist_min_version_override));
+    } else {
+      keys.put("MinimumOSVersion", new NSString(minOSVersion));
+    }
+
     if (platformBuildVersion.isPresent()) {
       keys.put("DTPlatformBuild", new NSString(platformBuildVersion.get()));
       keys.put("DTSDKBuild", new NSString(platformBuildVersion.get()));
