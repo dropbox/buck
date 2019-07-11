@@ -294,6 +294,10 @@ public class AppleConfig implements ConfigView<BuckConfig> {
     return delegate.getBooleanValue(APPLE_SECTION, "add_root_user_header_search_path_in_xcode", false);
   }
 
+  public boolean shouldAddTargetHeadersToUserHeaderSearchPathInXcode() {
+    return delegate.getBooleanValue(APPLE_SECTION, "add_target_headers_to_user_headers_in_xcode", false);
+  }
+
   public boolean shouldSkipAppexCopyFrameworksInXcodeProject() {
     return delegate.getBooleanValue(APPLE_SECTION, "skip_appex_copy_frameworks_in_xcode", false);
   }

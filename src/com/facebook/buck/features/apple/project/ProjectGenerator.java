@@ -1795,6 +1795,18 @@ public class ProjectGenerator {
         appendConfigsBuilder.put(
             "HEADER_SEARCH_PATHS",
             Joiner.on(' ').join(Iterables.concat(recursiveHeaderSearchPaths, headerMapBases)));
+
+        if (appleConfig.shouldAddTargetHeadersToUserHeaderSearchPathInXcode()) {
+          Path publicHeaders = getHeaderSymlinkTreePath(targetNode, HeaderVisibility.PUBLIC);
+          Path privateHeaders = getHeaderSymlinkTreePath(targetNode, HeaderVisibility.PRIVATE);
+          String[] firstOrderHeaders = {"$(PROJECT_DIR)/" + publicHeaders.toString(),
+              "$(PROJECT_DIR)/" + privateHeaders.toString()};
+          appendConfigsBuilder.put(
+              "USER_HEADER_SEARCH_PATHS",
+              Joiner.on(' ').join(firstOrderHeaders)
+          );
+        }
+
         if (hasSwiftVersionArg && containsSwiftCode && isFocusedOnTarget) {
           ImmutableSet<Path> swiftIncludePaths = collectRecursiveSwiftIncludePaths(targetNode);
           Stream<String> allValues =
