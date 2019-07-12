@@ -74,6 +74,7 @@ class XctoolRunTestsStep implements Step {
       Executors.newSingleThreadScheduledExecutor();
   private static final String XCTOOL_ENV_VARIABLE_PREFIX = "XCTOOL_TEST_ENV_";
   private static final String FB_REFERENCE_IMAGE_DIR = "FB_REFERENCE_IMAGE_DIR";
+  private static final String DBX_SUPPRESS_FILTER_WARNINGS_ENV = "DBX_SUPPRESS_FILTER_WARNINGS";
 
   private final ProjectFilesystem filesystem;
 
@@ -266,10 +267,11 @@ class XctoolRunTestsStep implements Step {
         return StepExecutionResult.of(returnCode);
       }
       ImmutableList<String> xctoolFilterParams = xctoolFilterParamsBuilder.build();
-      if (xctoolFilterParams.isEmpty()) {
+      String dbxFilterEnv = env.get(DBX_SUPPRESS_FILTER_WARNINGS_ENV);
+      if (xctoolFilterParams.isEmpty() && dbxFilterEnv != null && !dbxFilterEnv.equals("1")) {
         context
             .getConsole()
-            .printBuildFailure(
+            .printErrorText(
                 String.format(
                     Locale.US,
                     "No tests found matching specified filter (%s)",
