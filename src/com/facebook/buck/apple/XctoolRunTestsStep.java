@@ -453,12 +453,27 @@ class XctoolRunTestsStep implements Step {
       Multimap<String, TestDescription> testTargetsToDescriptions,
       ImmutableList.Builder<String> filterParamsBuilder) {
     for (String testTarget : testTargetsToDescriptions.keySet()) {
-      StringBuilder sb = new StringBuilder();
-      boolean matched = false;
+
+      int includeCount = 0;
+      int excludeCount = 0;
       for (TestDescription testDescription : testTargetsToDescriptions.get(testTarget)) {
         if (!testSelectorList.isIncluded(testDescription)) {
+          excludeCount++;
+        } else {
+          includeCount++;
+        }
+      }
+
+      boolean useOnly = excludeCount > includeCount;
+      boolean matched = false;
+      StringBuffer sb = new StringBuffer();
+
+      for (TestDescription testDescription : testTargetsToDescriptions.get(testTarget)) {
+        boolean isIncluded = testSelectorList.isIncluded(testDescription);
+        if ((useOnly && !isIncluded) || (!useOnly && isIncluded)) {
           continue;
         }
+
         if (!matched) {
           matched = true;
           sb.append(testTarget);
@@ -470,8 +485,13 @@ class XctoolRunTestsStep implements Step {
         sb.append('/');
         sb.append(testDescription.getMethodName());
       }
+
       if (matched) {
-        filterParamsBuilder.add("-only");
+        if (useOnly) {
+          filterParamsBuilder.add("-only");
+        } else {
+          filterParamsBuilder.add("-omit");
+        }
         filterParamsBuilder.add(sb.toString());
       }
     }
