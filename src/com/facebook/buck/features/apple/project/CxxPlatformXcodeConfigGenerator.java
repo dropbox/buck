@@ -72,9 +72,15 @@ class CxxPlatformXcodeConfigGenerator {
     setLanguageStandardValue(configBuilder, notProcessedCxxFlags, notProcessedAppendedConfig);
     setCxxLibraryValue(notProcessedCxxFlags, notProcessedAppendedConfig, configBuilder);
     setOtherCplusplusFlagsValue(configBuilder, notProcessedCxxFlags, notProcessedAppendedConfig);
+    setSkipInstall(configBuilder);
     setFlagsFromNotProcessedAppendedConfig(configBuilder, notProcessedAppendedConfig);
 
     return configBuilder.build();
+  }
+
+  public static void setSkipInstall(
+      ImmutableMap.Builder<String, String> configBuilder) {
+    configBuilder.put("SKIP_INSTALL", "YES");
   }
 
   public static ImmutableMap<String, ImmutableMap<String, String>>
