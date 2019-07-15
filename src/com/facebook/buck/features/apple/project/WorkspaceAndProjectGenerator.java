@@ -210,7 +210,9 @@ public class WorkspaceAndProjectGenerator {
         XcodeWorkspaceConfigDescription.getWorkspaceNameFromArg(workspaceArguments);
     Path outputDirectory;
     if (combinedProject) {
-      workspaceName += "-Combined";
+      if (appleConfig.shouldAppendCombinedToCombinedProjectsNames()) {
+        workspaceName += "-Combined";
+      }
       outputDirectory =
           BuildTargetPaths.getGenPath(rootCell.getFilesystem(), workspaceBuildTarget, "%s")
               .getParent()
@@ -1149,7 +1151,9 @@ public class WorkspaceAndProjectGenerator {
       if (combinedProject) {
         String workspaceName =
             XcodeWorkspaceConfigDescription.getWorkspaceNameFromArg(workspaceArguments);
-        workspaceName += "-Combined";
+        if (appleConfig.shouldAppendCombinedToCombinedProjectsNames()) {
+          workspaceName += "-Combined";
+        }
         projectOutputDirectory =
             BuildTargetPaths.getGenPath(rootCell.getFilesystem(), workspaceBuildTarget, "%s")
                 .getParent()

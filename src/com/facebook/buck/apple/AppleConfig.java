@@ -323,6 +323,10 @@ public class AppleConfig implements ConfigView<BuckConfig> {
     return delegate.getBooleanValue(APPLE_SECTION, FORCE_LOAD_LINK_WHOLE_LIBRARY_ENABLED, false);
   }
 
+  public boolean shouldAppendCombinedToCombinedProjectsNames() {
+    return delegate.getBooleanValue(APPLE_SECTION, "should_append_combined_to_combined_projects_names", true);
+  }
+
   public String getForceLoadLibraryPath(boolean isFocusedTarget) {
     Optional<String> path = delegate.getValue(APPLE_SECTION, FORCE_LOAD_LIBRARY_PATH);
     if (!isFocusedTarget && path.isPresent()) {
