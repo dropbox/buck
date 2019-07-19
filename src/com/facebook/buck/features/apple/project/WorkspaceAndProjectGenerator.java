@@ -321,7 +321,7 @@ public class WorkspaceAndProjectGenerator {
           targetToProjectPathMap,
           buildTargetToPBXTarget);
 
-      return workspaceGenerator.writeWorkspace();
+      return workspaceGenerator.writeWorkspace(appleConfig.shouldUseModernBuildSystem());
     }
   }
 

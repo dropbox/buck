@@ -176,7 +176,7 @@ class WorkspaceGenerator {
     return outputDirectory.resolve(workspaceName + ".xcworkspace");
   }
 
-  public Path writeWorkspace() throws IOException {
+  public Path writeWorkspace(boolean shouldUseModernBuildSystem) throws IOException {
     DocumentBuilder docBuilder;
     Transformer transformer;
     try {
@@ -267,8 +267,16 @@ class WorkspaceGenerator {
             + "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\""
             + " \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
             + "<plist version=\"1.0\">\n"
-            + "<dict>\n"
-            + "\t<key>IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded</key>\n"
+            + "<dict>\n";
+            
+    if (!shouldUseModernBuildSystem) {
+      workspaceSettings += 
+        "\t<key>BuildSystemType</key>\n"
+            + "\t<string>Original</string>\n";
+    }
+    
+    workspaceSettings +=
+        "\t<key>IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded</key>\n"
             + "\t<false/>\n"
             + "</dict>\n"
             + "</plist>";

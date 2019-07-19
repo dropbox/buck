@@ -287,7 +287,7 @@ public class AppleConfig implements ConfigView<BuckConfig> {
   }
 
   public boolean shouldUseShortNamesForTargets() {
-    return delegate.getBooleanValue(APPLE_SECTION, "should_use_short_names_for_targets", true);
+    return delegate.getBooleanValue(APPLE_SECTION, "use_short_names_for_targets", true);
   }
 
   public boolean shouldAddRootUserHeaderSearchPathInXcode() {
@@ -324,7 +324,11 @@ public class AppleConfig implements ConfigView<BuckConfig> {
   }
 
   public boolean shouldAppendCombinedToCombinedProjectsNames() {
-    return delegate.getBooleanValue(APPLE_SECTION, "should_append_combined_to_combined_projects_names", true);
+    return delegate.getBooleanValue(APPLE_SECTION, "append_combined_to_combined_projects_names", true);
+  }
+
+  public boolean shouldUseModernBuildSystem() {
+    return delegate.getBooleanValue(APPLE_SECTION, "use_modern_build_system", true);
   }
 
   public String getForceLoadLibraryPath(boolean isFocusedTarget) {
